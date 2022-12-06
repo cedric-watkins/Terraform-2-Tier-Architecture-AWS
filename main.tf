@@ -250,7 +250,7 @@ resource "aws_security_group" "db_sg" {
   }
 }
 
-#Creating my Database mysql Instance
+#Creating my Database mysql Instance in Availabiltiy Zone us-east-2a
 resource "aws_db_instance" "mysql_db" {
   allocated_storage   = 10
   identifier          = "mysql-db"
