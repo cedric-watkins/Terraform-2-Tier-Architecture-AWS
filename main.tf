@@ -11,10 +11,12 @@ provider "aws" {
   region = "us-east-2"
 }
 
+#Pulling a list of all the Availabiltiy zones in us-east-2
 data "aws_availability_zones" "available" {
   state = "available"
 }
 
+#Creating a vpc resource with a cidr block of 10.0.0.0/16
 resource "aws_vpc" "myvpc" {
 
   cidr_block = "10.0.0.0/16"
@@ -25,6 +27,7 @@ resource "aws_vpc" "myvpc" {
 
 }
 
+#Creating an Internet Gateway for my vpc
 resource "aws_internet_gateway" "myigw" {
 
   vpc_id = aws_vpc.myvpc.id
@@ -34,7 +37,7 @@ resource "aws_internet_gateway" "myigw" {
   }
 }
 
-
+#Creating 2 Public subnets for my web tier
 resource "aws_subnet" "public_subnets" {
 
   count = 2
@@ -49,7 +52,7 @@ resource "aws_subnet" "public_subnets" {
   }
 }
 
-
+#Creating a route table for my public subnets and vpc
 resource "aws_route_table" "web_route" {
   vpc_id = aws_vpc.myvpc.id
 
@@ -63,13 +66,14 @@ resource "aws_route_table" "web_route" {
   }
 }
 
-
+#Associating my Public Subnets to my web route table
 resource "aws_route_table_association" "web_rt_subs" {
   count          = 2
   subnet_id      = aws_subnet.public_subnets.*.id[count.index]
   route_table_id = aws_route_table.web_route.id
 }
 
+#Creating 2 Private Subnets for my Data tier
 resource "aws_subnet" "private_subnets" {
 
   count = 2
@@ -83,6 +87,7 @@ resource "aws_subnet" "private_subnets" {
   }
 }
 
+#Creating a route table for my Database tier
 resource "aws_route_table" "db_route" {
   vpc_id = aws_vpc.myvpc.id
 
@@ -91,14 +96,14 @@ resource "aws_route_table" "db_route" {
   }
 }
 
+#Associating my Private Subnets to my Database Route table
 resource "aws_route_table_association" "db_rt_subs" {
   count          = 2
   subnet_id      = aws_subnet.private_subnets.*.id[count.index]
   route_table_id = aws_route_table.db_route.id
 }
 
-
-
+#Creating a Security Group that will allow access via http and ssh
 resource "aws_security_group" "public_sg" {
 
   name   = "web-server-sg"
@@ -137,6 +142,7 @@ resource "aws_security_group" "public_sg" {
 
 }
 
+#Creating 2 ec2 instances the will be located in two seperate Public subnets and availability zones
 resource "aws_instance" "ec2_instance" {
 
   count = 2
@@ -161,6 +167,7 @@ resource "aws_instance" "ec2_instance" {
 
 }
 
+#Creating a Load Balancing Target for my Application Load Balancer
 resource "aws_lb_target_group" "lb_target" {
 
   name     = "lb-target"
@@ -169,6 +176,7 @@ resource "aws_lb_target_group" "lb_target" {
   vpc_id   = aws_vpc.myvpc.id
 }
 
+#Creating a load balancer listner for my Application Load Balancer
 resource "aws_lb_listener" "lb_listener" {
 
   load_balancer_arn = aws_lb.web_lb.arn
@@ -182,6 +190,7 @@ resource "aws_lb_listener" "lb_listener" {
   }
 }
 
+#Creating my Application Load Balancer for my Ec2 Instances
 resource "aws_lb" "web_lb" {
 
   name               = "web-lb"
@@ -195,6 +204,7 @@ resource "aws_lb" "web_lb" {
   }
 }
 
+#Attaching my 2 EC2 Instances to my Application Load Balancer
 resource "aws_lb_target_group_attachment" "tg_attachment" {
 
   count = 2
@@ -204,13 +214,13 @@ resource "aws_lb_target_group_attachment" "tg_attachment" {
   port             = 80
 }
 
-
+#Creating a Subnet Group for my Data tier
 resource "aws_db_subnet_group" "db_subnet_group" {
 
   subnet_ids = aws_subnet.private_subnets.*.id
 }
 
-
+#Creating a Security Group for my Data Tier that open on port 3306 from public sg and ssh
 resource "aws_security_group" "db_sg" {
   name        = "db_sg"
   description = "allow traffic only from web_sg"
@@ -240,6 +250,7 @@ resource "aws_security_group" "db_sg" {
   }
 }
 
+#Creating my Database mysql Instance
 resource "aws_db_instance" "mysql_db" {
   allocated_storage   = 10
   identifier          = "mysql-db"
