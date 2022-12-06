@@ -220,7 +220,7 @@ resource "aws_db_subnet_group" "db_subnet_group" {
   subnet_ids = aws_subnet.private_subnets.*.id
 }
 
-#Creating a Security Group for my Data Tier that open on port 3306 from public sg and ssh
+#Creating a Security Group for my Data Tier that open on port 3306 from public sg 
 resource "aws_security_group" "db_sg" {
   name        = "db_sg"
   description = "allow traffic only from web_sg"
@@ -232,14 +232,6 @@ resource "aws_security_group" "db_sg" {
     protocol        = "tcp"
     security_groups = [aws_security_group.public_sg.id]
     cidr_blocks     = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    security_groups = [aws_security_group.public_sg.id]
-    cidr_blocks     = [var.public_subnet_cidr[0]]
   }
 
   egress {
